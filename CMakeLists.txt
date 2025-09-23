@@ -7,6 +7,7 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Net)
 
 set(sources 
     simulate.cpp
+    GadgetUtils.cpp
 )
 
 set(include 
