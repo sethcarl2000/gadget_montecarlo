@@ -24,16 +24,39 @@ namespace GadgetUtils
         double z() const noexcept { return data[2]; }
 
         //addition operator
-        Vec3 operator+(const Vec3& rhs) const noexcept; 
+        inline Vec3 operator+(const Vec3& rhs) const noexcept{
+            return Vec3{{
+                data[0] + rhs.data[0],
+                data[1] + rhs.data[1],
+                data[2] + rhs.data[2]
+            }};
+        } 
         
         //dot product operator
-        double operator*(const Vec3& rhs) const noexcept; 
+        double operator*(const Vec3& rhs) const noexcept {
+            return 
+                data[0] * rhs.data[0] +
+                data[1] * rhs.data[1] + 
+                data[2] * rhs.data[2]; 
+        };
+        
+        //scalar multiplication operator
+        inline Vec3 operator*(double mult) const noexcept {
+            return Vec3{{
+                data[0] * mult, 
+                data[1] * mult,
+                data[2] * mult
+            }};
+        }
 
         //magnitude of this vector 
         inline double mag() const noexcept {return std::sqrt((*this) * (*this));}; 
 
         //returns a normalized version of this Vec3 with mag()=1. 
-        Vec3 unit() const noexcept; 
+        inline Vec3 unit() const noexcept {
+            double mult = 1./mag(); 
+            return (*this) * mult; 
+        }; 
     };
 
     enum EventType : char {

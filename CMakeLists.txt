@@ -8,10 +8,12 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Net)
 set(sources 
     simulate.cpp
     GadgetUtils.cpp
+    LatticeFreePath.cpp
 )
 
 set(include 
     GadgetUtils.hpp
+    LatticeFreePath.hpp
 )
 
 add_executable(simulate ${sources} ${include})

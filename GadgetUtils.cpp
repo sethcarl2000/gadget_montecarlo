@@ -7,38 +7,7 @@
 using GadgetUtils::Vec3; 
 using namespace std; 
 
-//___________________________________________________________________________________________________________
-Vec3 GadgetUtils::Vec3::operator+(const GadgetUtils::Vec3& rhs) const noexcept
-{
-    array<double,3>&& dat = { 
-        data[0]+rhs.data[0],
-        data[1]+rhs.data[1],
-        data[2]+rhs.data[2] 
-    };
-    
-    return Vec3{std::move(dat)}; 
-}
-//___________________________________________________________________________________________________________
-double GadgetUtils::Vec3::operator*(const Vec3& rhs) const noexcept 
-{
-    return 
-        data[0] * rhs.data[0] +
-        data[1] * rhs.data[1] + 
-        data[2] * rhs.data[2];  
-}
-//___________________________________________________________________________________________________________
-Vec3 GadgetUtils::Vec3::unit() const noexcept 
-{
-    double&& length = mag(); 
-    
-    std::array<double,3>&& dat = { 
-        data[0]/ length,
-        data[1]/ length,
-        data[2]/ length
-    };
 
-    return Vec3{std::move(dat)}; 
-}
 //___________________________________________________________________________________________________________
 //___________________________________________________________________________________________________________
 
