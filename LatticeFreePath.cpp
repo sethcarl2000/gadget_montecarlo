@@ -41,6 +41,8 @@ double LatticePathLength(Vec3 pos, Vec3 dir, double sphere_R, double lattice_spa
 
     double length = 0.; 
 
+    const double dt = 1e-6; 
+
     while (iteration++ < max_iterations) {
 
         /*printf("it %4li pos {%+.3f %+.3f %+.3f} dir {%+.3f %+.3f %+.3f}\n", 
@@ -65,6 +67,16 @@ double LatticePathLength(Vec3 pos, Vec3 dir, double sphere_R, double lattice_spa
             //loop this track to the opposite side of the crystal. 
             pos = pos_and_norm.first + (pos_and_norm.second * -lattice_spacing); 
 
+            /*if (fabs(pos.x()) > lattice_spacing/2. || 
+                fabs(pos.y()) > lattice_spacing/2. || 
+                fabs(pos.z()) > lattice_spacing/2.)   {
+                    
+                printf("error - exit of lattice. pos{%+.4f, %+.4f, %.4f}\n", pos.x(), pos.y(), pos.z()); 
+            } */ 
+
+            length += dt; 
+
+            pos = pos + (dir * dt); 
         } 
     }
 
