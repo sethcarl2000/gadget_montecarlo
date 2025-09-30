@@ -7,12 +7,16 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Net)
 
 set(sources 
     simulate.cpp
+    EventType.cpp
     GadgetUtils.cpp
     LatticeFreePath.cpp
 )
 
 set(include 
     GadgetUtils.hpp
+    Vec3.hpp
+    Neutron.hpp
+    EventType.hpp
     LatticeFreePath.hpp
 )
 
