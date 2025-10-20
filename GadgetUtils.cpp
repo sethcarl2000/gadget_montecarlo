@@ -1,4 +1,3 @@
-
 #include "GadgetUtils.hpp"
 #include <cmath>
 #include <utility> 
@@ -6,6 +5,16 @@
 #include <TRandom3.h> 
 #include <string> 
 #include <iostream> 
+#include <TLine.h> 
+#include <TEllipse.h> 
+#include <TPad.h> 
+#include <TObject.h> 
+#include <TClass.h> 
+#include <TText.h> 
+#include <TH1F.h> 
+#include <TCanvas.h> 
+#include <thread> 
+#include <chrono> 
 
 using namespace std; 
 
@@ -27,12 +36,16 @@ double GadgetUtils::DistanceToSphere(const Vec3& X, const Vec3& S, double R2)
     return x_x > R2 ? - s_x - sqrt(sqrt_arg) : - s_x + sqrt(sqrt_arg);  
 }   
 
+TCanvas *gDraw_canv=nullptr; 
+TH1F *gDraw_pad=nullptr; 
+
 //___________________________________________________________________________________________________________
 double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_types, 
                                             const int n_generations, 
                                             const int n_simulations,
                                             double sphere_rad,          //units in cm 
-                                            double number_density       //units in cm^-3. 
+                                            double number_density,       //units in cm^-3. 
+                                            const bool draw_generations_gif
                                             )
 {
     //take the neutron and pick a random direction 
@@ -41,128 +54,23 @@ double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_t
 
     TRandom3 rand; 
 
-    auto Compute_n_neutrons_from_fission = [&rand](double E_incident_MeV)
-    {
-        //use this empirical formula to compute the number of fissile neutrons
-        // using a poisson dist from 
 
-        double n_avg = (0.1543 * E_incident_MeV) + 2.299; 
-
-        return GadgetUtils::ThrowPoisson(rand.Rndm(), n_avg); 
-    }; 
-
-    //when we use a maxwellian dist for the 'temp', we need this as a way to give all the neutrons proper momenta 
-    const double PFNS_momentum_sigma = 35.22; // MeV/c 
+    //this might change if I add a moderator
+    const double M = 238. * Neutron::mass; 
 
     const double R2 = pow( sphere_rad, 2 ); 
-
-    //Get the flag of the event type 
-    auto EventFlagName = [](EventType::Flag flag){
-        string str; 
-        switch (flag) {
-            case EventType::kNone : str="none"; break; 
-            case EventType::kElastic_235 : str="235u(elastic)"; break; 
-            case EventType::kElastic_238 : str="238u(elastic)"; break; 
-            case EventType::kFission_235 : str="235u(fission)"; break; 
-            case EventType::kFission_238 : str="238u(fission)"; break; 
-            case EventType::kExit : str="exit-sphere"; break; 
-            default : str="N/A"; 
-        }
-        return str; 
-    };
-
 
     //const vector<EventType> event_types = EventType::Init(0.8, number_density); 
 
     //average number of neutrons at the end of 'n_generations' generations
     double N_avg =0.; 
 
-    for (int trial=0; trial<n_simulations; trial++) {
 
+
+    for (int trial=0; trial<n_simulations; trial++) {
 
         int n_neutrons_generate=1; 
         vector<Neutron> nextgen_buffer{};
-        
-        //________________________________________________________________________
-        //generate 'n' neutrons
-        auto GenerateNeutrons = [&](int n, Vec3 pos){
-            
-            //generate a neutron
-            for (int i=0; i<n; i++) {
-                
-                Vec3 P{
-                    rand.Gaus() * PFNS_momentum_sigma, 
-                    rand.Gaus() * PFNS_momentum_sigma, 
-                    rand.Gaus() * PFNS_momentum_sigma
-                }; 
-
-                //find a random spot from within the sphere 
-                nextgen_buffer.push_back({ pos, P });
-            }
-            return; 
-        };   
-        //________________________________________________________________________
-
-        
-        //________________________________________________________________________
-        //generate 'n' 
-        auto TransportNeutron = [&](Neutron& neutron, long int max_step=1e5){
-
-            if (neutron.pos.mag() > sphere_rad) {
-                fprintf(stderr, "Error - neutron ended up outside sphere!\n"); 
-                return EventType::kNone; 
-            }
-        
-            double MeV = neutron.GetKineticEnergy(); 
-
-            long int step=0; 
-            while (step++ < max_step) {
-                
-                //compute all possible events
-                double x_exit = GadgetUtils::DistanceToSphere(neutron.pos, neutron.momentum, R2); 
-                //find which event type this is
-                double min_x = x_exit; 
-                EventType::Flag min_event = EventType::kExit; 
-                
-                for (const auto& ev : event_types) {
-
-                    double x_ev = -log(1. - rand.Rndm()) * ev.MeanFreePath(MeV); 
-                    
-                    if (x_ev < min_x ) {
-                        min_x = x_ev; 
-                        min_event = ev.GetType(); 
-                    }
-                }
-                
-                //update the position
-                neutron.total_path += min_x; 
-                neutron.event       = min_event; 
-                neutron.pos         = neutron.pos + (neutron.momentum.unit() * min_x); 
-                neutron.n_collisions++; 
-
-                //check if this event 'kills' this neutron (even if it creates new neutrons in the process!)
-                if (neutron.event == EventType::kFission_235 || 
-                    neutron.event == EventType::kFission_238 || 
-                    neutron.event == EventType::kExit) 
-                    break; 
-                
-                //otherwise, change pick a new, random direction for the neutron 
-                double P_mag = neutron.momentum.mag(); 
-
-                neutron.momentum[0] = rand.Gaus();
-                neutron.momentum[1] = rand.Gaus();
-                neutron.momentum[2] = rand.Gaus();
-                    
-                //give it the correct magnitude. for now, we aren't simulating how each collision changes
-                // the neutron's kinetic energy. 
-                neutron.momentum = neutron.momentum.unit() * P_mag; 
-            }
-
-            //return the type of event this neutron ended with
-            return neutron.event; 
-        };
-        //________________________________________________________________________
-        
 
         //pick a random starting place within the sphere
         Vec3 start_pos{sphere_rad*2., 0., 0.}; 
@@ -173,9 +81,15 @@ double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_t
         }
 
         //add this first neutron
-        GenerateNeutrons(1, start_pos); 
+        GadgetUtils::GenerateNeutrons(nextgen_buffer, 1, start_pos, &rand); 
 
         double N=0.; 
+
+        if (draw_generations_gif) {
+            cout << "creating canvas..." << endl; 
+            gDraw_canv = new TCanvas("c", "drawing", 600,600); 
+            gDraw_pad = gDraw_canv->DrawFrame(-sphere_rad,-sphere_rad, sphere_rad,sphere_rad); 
+        }
 
         for (int g=0; g<n_generations; g++) {
 
@@ -192,40 +106,153 @@ double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_t
             //transport all the neutrons
             for (auto& neutron : neutrons) {
                 
-                //printf("  ~~~  transporting neutron %4i...\n", i_n++); 
-
-                EventType::Flag end_state = TransportNeutron(neutron); 
-
-                //check if the neutron ended with a fission
-                if (end_state == EventType::kFission_235 || 
-                    end_state == EventType::kFission_238) 
-                {
-                    GenerateNeutrons( 
-                        Compute_n_neutrons_from_fission(neutron.GetKineticEnergy()), 
-                        neutron.pos
-                    ); 
+                if (neutron.pos.mag() > sphere_rad) {
+                    fprintf(stderr, "Error - neutron ended up outside sphere!\n"); 
+                    return EventType::kNone; 
                 }
+            
+                double MeV = neutron.GetKineticEnergy(); 
+
+                long int step=0; 
+                while (step++ < 1e4) {
                     
+                    //compute all possible events
+                    double x_exit = GadgetUtils::DistanceToSphere(neutron.pos, neutron.momentum, R2); 
+                    //find which event type this is
+                    double min_x = x_exit; 
+
+                    //a 'nullptr' corresponds to a type of 'exit' 
+                    const EventType* min_event = nullptr; 
+
+                    for (const auto& ev : event_types) {
+
+                        double x_ev = -log(1. - rand.Rndm()) * ev.MeanFreePath(MeV); 
+                        
+                        if (x_ev < min_x ) {
+                            min_x = x_ev; 
+                            min_event = &ev; 
+                        }
+                    }
+
+                    if (draw_generations_gif) {
+                        //gDraw_canv->cd(); 
+                        auto&& line = new TLine(
+                            neutron.pos.x(), 
+                            neutron.pos.y(), 
+
+                            neutron.pos.x() + neutron.momentum.unit().x() * min_x, 
+                            neutron.pos.y() + neutron.momentum.unit().y() * min_x
+                        );
+                        line->SetLineColor(kRed); 
+                        line->SetLineStyle(kSolid); 
+                        line->Draw(); 
+
+                        printf("vertex: [%+.2f,%+.2f] => [%+.2f,%+.2f]\n", 
+                            neutron.pos.x(), 
+                            neutron.pos.y(), 
+
+                            neutron.pos.x() + neutron.momentum.unit().x() * min_x, 
+                            neutron.pos.y() + neutron.momentum.unit().y() * min_x
+                        );
+                    }
+
+                    //if the 'exit' length was the shortest, then exit 
+                    if (min_event == nullptr) {
+                        
+                        if (draw_generations_gif) {
+
+                            //gDraw_canv->cd(); 
+                            auto circ = new TEllipse(
+                                neutron.pos.x() + neutron.momentum.unit().x() * min_x, 
+                                neutron.pos.y() + neutron.momentum.unit().y() * min_x, 
+                                sphere_rad / 100., 
+                                sphere_rad / 100.
+                            ); 
+                            circ->SetFillStyle(0.); 
+                            circ->SetLineColor(kBlack); 
+                            circ->SetLineWidth(1); 
+                            circ->Draw(); 
+                        }
+                        break; 
+                    }
+
+                    //if it's a fission, then exit
+                    auto event_type = min_event->GetType(); 
+
+                    if (event_type == EventType::kFission) {
+                        GadgetUtils::Fission(nextgen_buffer, neutron, &rand);
+                        break; 
+                    }
+                    
+                    //otherwise, update the position of this neutron 
+                    neutron.total_path += min_x; 
+                    neutron.event       = min_event->GetType(); 
+                    neutron.pos         = neutron.pos + (neutron.momentum.unit() * min_x); 
+                    neutron.n_collisions++; 
+
+                    switch (event_type) {
+                        case EventType::kElastic    : { 
+                            neutron = GadgetUtils::ElasticScatter(neutron, M, &rand); 
+                            break; 
+                        }
+                        case EventType::kInelastic  : { 
+                            neutron = GadgetUtils::InelasticScatter(neutron, &rand); 
+                            break; 
+                        }
+                    }//switch (event_type)
+
+                }//while (step++ < 1e4)
+
             }
+
+            if (draw_generations_gif) {
+                
+                //write the generation name, and continue
+                auto text = new TText(0.25, 0.10, Form("gen: %i", g)); 
+                text->Draw("SAME"); 
+
+                auto circ = new TEllipse(0.,0.,  sphere_rad,sphere_rad); 
+                circ->SetLineColor(kBlue); 
+                circ->SetLineWidth(2); 
+                circ->Draw("SAME"); 
+
+                //gDraw_canv->Modified(); 
+                //gDraw_canv->Update();
+                //gDraw_canv->SaveAs("output.gif+100"); 
+
+                //gDraw_canv->DrawFrame(-sphere_rad,-sphere_rad, sphere_rad,sphere_rad); 
+                
+                /*/delete all the lines from past generations, and continue. 
+                for (auto tobj : *(gDraw_canv->GetListOfPrimitives())) {
+                    if (tobj->IsA() == TClass::GetClass<TLine>() || 
+                        tobj->IsA() == TClass::GetClass<TEllipse>() || 
+                        tobj->IsA() == TClass::GetClass<TText>()
+                    ) delete tobj; 
+                }*/ 
+                //this_thread::sleep_for(1500ms); 
+                cout << "done with gen " << g << " neutron buffer size: " << nextgen_buffer.size() << endl; 
+            }
+
+            
         }
 
-        //check to see how many neutrons there are. 
-
+        //check to see how many neutrons there are.
         N_avg += (double)nextgen_buffer.size(); 
     }
     
     N_avg *= 1./((double)n_simulations); 
 
+    double k_effective = pow( N_avg, 1./((double)n_generations) );
+
     printf("after %i, simulations of %i generations each, average is %.5f, so k=%.6f\n", 
         n_simulations,
         n_generations, 
         N_avg, 
-        pow( N_avg, 1./((double)n_generations) ) 
+        k_effective 
     ); 
 
-
     //now, find the new kind of event. 
-    return pow( N_avg, 1./((double)n_generations) ); 
+    return k_effective; 
 }   
 //___________________________________________________________________________________________________________
 int GadgetUtils::ThrowPoisson(double rndm, double lambda)
@@ -241,7 +268,112 @@ int GadgetUtils::ThrowPoisson(double rndm, double lambda)
     return (int)n; 
 }
 //___________________________________________________________________________________________________________
+Neutron GadgetUtils::ElasticScatter(Neutron n, double M, TRandom3* rand)
+{
+    // First, generate a random, unit vector. 
+    Vec3 u_rand = Vec3{
+        rand->Gaus(), 
+        rand->Gaus(), 
+        rand->Gaus()
+    }.unit(); 
+
+    // Now, find the component of 'u_rand' the neutron's momentum perpendicular to the new unit vector
+    Vec3 p_parallel = n.momentum.unit(); 
+
+    auto p_perp = u_rand + ( u_rand * (u_rand * p_parallel) * -1. ); 
+    p_perp = p_perp.unit(); 
+
+    // now we have a unit vector in our original direction (p_parallel) and another one with a random phi, 
+    // which is perpendicular to the original direction (p_perp).
+
+    // Now, we must select a random cos(X). 
+    // To simulate how elastic scattering becomes more forward-biased at higher energies, 
+    // we will use an expoenential distribution. 
+    double MeV = n.GetKineticEnergy(); 
+
+    double angle_bias_param = 3.22291 * MeV; 
+
+    // this generates cosX on the interval: cosX \in [-1, 1). 
+    double cosX; 
+    if (MeV > 0.1) {
+        
+        do { 
+            cosX = -(1./angle_bias_param) * log( 1. - rand->Rndm() ); 
+        } while (cosX > 2.); 
+
+        cosX = 1. - cosX; 
+
+    } else {
+        
+        //at these energies (MeV < 0.1), scattering is basically isotropic. 
+        cosX = 1. - 2.*rand->Rndm(); 
+    }
+
+    // so, now we've chosen cosX (with 'X' being defiend as the angle between our new dir. and our old dir.).
+    // Now, we must choose the new energy. when M >> m_n (scattering center mass bigger than neutron mass), 
+    // the following is a good approx.: 
+    double p_new_mag = (( M + (Neutron::mass*cosX) )/( M + Neutron::mass )) * n.momentum.mag(); 
+
+    // so, now let's pick the new momentum: 
+    Vec3 p_new = (p_parallel * cosX) + (p_perp * sqrt(1. - (cosX*cosX))); 
+
+    n.momentum = p_new * p_new_mag; 
+
+    return n; 
+}
+//___________________________________________________________________________________________________________
+Neutron GadgetUtils::InelasticScatter(Neutron n, TRandom3* rand)
+{
+    // this assumes that inelastic scattering is isotropic, AND that the energy a neutron looses 
+    // is randomly, uniformly distributed on the interval: [0, neutron_energy]. 
+
+    // First, generate a random, unit vector. 
+    Vec3 u_rand = Vec3{
+        rand->Gaus(), 
+        rand->Gaus(), 
+        rand->Gaus()
+    }.unit(); 
+
+    double energy = n.GetKineticEnergy(); 
+
+    double new_energy = energy - (min<double>( 3., energy ) * rand->Rndm()); 
+
+    n.momentum = u_rand * sqrt( 2. * Neutron::mass * new_energy ); 
+
+    return n; 
+}
 //___________________________________________________________________________________________________________
 //___________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________
+void GadgetUtils::GenerateNeutrons(vector<Neutron>& neutron_buffer, int N, Vec3 pos, TRandom3* rand)
+{
+    //when we use a maxwellian dist for the 'temp', we need this as a way to give all the neutrons proper momenta 
+    const double PFNS_momentum_sigma = 35.22; // MeV/c 
+
+    for (int i=0; i<N; i++) {
+
+        Vec3 momentum{
+            rand->Gaus() * PFNS_momentum_sigma, 
+            rand->Gaus() * PFNS_momentum_sigma, 
+            rand->Gaus() * PFNS_momentum_sigma
+        }; 
+
+        neutron_buffer.push_back({ pos, momentum }); 
+    }
+}
+//___________________________________________________________________________________________________________
+void GadgetUtils::Fission(vector<Neutron>& buffer, Neutron n, TRandom3* rand)
+{
+    //use this empirical formula to compute the number of fissile neutrons
+    // using a poisson dist from 
+    double n_avg = (0.1543 * n.GetKineticEnergy()) + 2.299; 
+
+    int n_new_neutrons = GadgetUtils::ThrowPoisson(rand->Rndm(), n_avg); 
+
+    GadgetUtils::GenerateNeutrons(buffer, n_new_neutrons, n.pos, rand); 
+
+    return; 
+}
 //___________________________________________________________________________________________________________
 //___________________________________________________________________________________________________________

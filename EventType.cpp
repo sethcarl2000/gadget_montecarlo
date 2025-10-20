@@ -10,27 +10,30 @@ vector<EventType> EventType::Init(double enrichment_frac, double num_density)
 
     vector<EventType> types; 
 
+    // 235u elastic 
     types.push_back({
-        kElastic_235, 
+        kElastic, 
         [](double MeV){ return 8.4 * GadgetUtils::barns_to_cm; }, 
         enrichment_frac*num_density
     }); 
 
+    // 235u fission 
     types.push_back({
-        kFission_235, 
+        kFission, 
         [](double MeV){ return 1.6 * GadgetUtils::barns_to_cm; }, 
         enrichment_frac*num_density
     }); 
 
-
+    // 238u elastic 
     types.push_back({
-        kElastic_238, 
+        kElastic, 
         [](double MeV){ return 9.4 * GadgetUtils::barns_to_cm; }, 
         (1. - enrichment_frac)*num_density
     }); 
 
+    // 238u fission
     types.push_back({
-        kFission_238, 
+        kFission, 
         [](double MeV){ return 0.6 * GadgetUtils::barns_to_cm; }, 
         (1. - enrichment_frac)*num_density
     }); 

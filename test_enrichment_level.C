@@ -41,14 +41,14 @@ int test_enrichment_level(const char* path_png)
 
     //units in cm 
     const double radius0 = 1.; 
-    const double radius1 = 30.; 
+    const double radius1 = 20.; 
     const int npts = 10; 
 
     const double uranium_density = 0.0191; //kg/cm^3 
     auto ball_mass = [uranium_density](double R) { return uranium_density * (TMath::Pi() * 4. / 3.)*pow( R, 3 ); }; 
 
     const int n_generations = 2; 
-    const int n_simulations = 1e6; 
+    const int n_simulations = 1e5; 
     
     auto canv = new TCanvas("c", "canvas", 1600, 500);
     canv->Divide(2,1);

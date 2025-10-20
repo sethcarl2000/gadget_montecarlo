@@ -16,12 +16,11 @@ class EventType {
 public: 
 
     enum Flag {
-        kNone = 0, 
+        kNone = 0,
         kExit,
-        kElastic_235,
-        kElastic_238, 
-        kFission_235,
-        kFission_238
+        kElastic,
+        kInelastic, 
+        kFission
     }; 
 
 private: 
