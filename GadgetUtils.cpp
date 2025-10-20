@@ -28,20 +28,33 @@ double GadgetUtils::DistanceToSphere(const Vec3& X, const Vec3& S, double R2)
 }   
 
 //___________________________________________________________________________________________________________
-void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types, 
-                                        const int n_generations, 
-                                        const int n_simulations,
-                                        double sphere_rad,          //units in cm 
-                                        double number_density       //units in cm^-3. 
-                                        )
+double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_types, 
+                                            const int n_generations, 
+                                            const int n_simulations,
+                                            double sphere_rad,          //units in cm 
+                                            double number_density       //units in cm^-3. 
+                                            )
 {
     //take the neutron and pick a random direction 
-    const double neutron_energy = 2.0; //MeV
+    const double neutron_energy = 2.0; // MeV
     const int neutrons_per_fission = 3; 
 
-    const double R2 = pow( sphere_rad, 2 ); 
-
     TRandom3 rand; 
+
+    auto Compute_n_neutrons_from_fission = [&rand](double E_incident_MeV)
+    {
+        //use this empirical formula to compute the number of fissile neutrons
+        // using a poisson dist from 
+
+        double n_avg = (0.1543 * E_incident_MeV) + 2.299; 
+
+        return GadgetUtils::ThrowPoisson(rand.Rndm(), n_avg); 
+    }; 
+
+    //when we use a maxwellian dist for the 'temp', we need this as a way to give all the neutrons proper momenta 
+    const double PFNS_momentum_sigma = 35.22; // MeV/c 
+
+    const double R2 = pow( sphere_rad, 2 ); 
 
     //Get the flag of the event type 
     auto EventFlagName = [](EventType::Flag flag){
@@ -50,7 +63,8 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
             case EventType::kNone : str="none"; break; 
             case EventType::kElastic_235 : str="235u(elastic)"; break; 
             case EventType::kElastic_238 : str="238u(elastic)"; break; 
-            case EventType::kAbsorb_235 : str="235u(absorb)"; break; 
+            case EventType::kFission_235 : str="235u(fission)"; break; 
+            case EventType::kFission_238 : str="238u(fission)"; break; 
             case EventType::kExit : str="exit-sphere"; break; 
             default : str="N/A"; 
         }
@@ -71,15 +85,19 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
         
         //________________________________________________________________________
         //generate 'n' neutrons
-        auto GenerateNeutrons = [&](int n, Vec3 pos, double momentum){
+        auto GenerateNeutrons = [&](int n, Vec3 pos){
             
             //generate a neutron
             for (int i=0; i<n; i++) {
                 
-                Vec3 P{rand.Gaus(), rand.Gaus(), rand.Gaus()}; 
+                Vec3 P{
+                    rand.Gaus() * PFNS_momentum_sigma, 
+                    rand.Gaus() * PFNS_momentum_sigma, 
+                    rand.Gaus() * PFNS_momentum_sigma
+                }; 
 
                 //find a random spot from within the sphere 
-                nextgen_buffer.push_back({ pos, P.unit() * momentum });
+                nextgen_buffer.push_back({ pos, P });
             }
             return; 
         };   
@@ -95,18 +113,16 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
                 return EventType::kNone; 
             }
         
-            double MeV = neutron.momentum.mag(); 
+            double MeV = neutron.GetKineticEnergy(); 
 
             long int step=0; 
             while (step++ < max_step) {
-                
                 
                 //compute all possible events
                 double x_exit = GadgetUtils::DistanceToSphere(neutron.pos, neutron.momentum, R2); 
                 //find which event type this is
                 double min_x = x_exit; 
                 EventType::Flag min_event = EventType::kExit; 
-
                 
                 for (const auto& ev : event_types) {
 
@@ -118,31 +134,31 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
                     }
                 }
                 
-
                 //update the position
                 neutron.total_path += min_x; 
                 neutron.event       = min_event; 
                 neutron.pos         = neutron.pos + (neutron.momentum.unit() * min_x); 
                 neutron.n_collisions++; 
 
-                /*printf("   neutron n.coll., pathlen, event-type: %u, %-3.5f, %s\n", 
-                    step, 
-                    neutron.total_path, 
-                    EventFlagName(neutron.event).data()
-                );*/  
-
-                if (neutron.event == EventType::kAbsorb_235 || 
+                //check if this event 'kills' this neutron (even if it creates new neutrons in the process!)
+                if (neutron.event == EventType::kFission_235 || 
+                    neutron.event == EventType::kFission_238 || 
                     neutron.event == EventType::kExit) 
                     break; 
-
+                
                 //otherwise, change pick a new, random direction for the neutron 
+                double P_mag = neutron.momentum.mag(); 
+
                 neutron.momentum[0] = rand.Gaus();
                 neutron.momentum[1] = rand.Gaus();
                 neutron.momentum[2] = rand.Gaus();
-
-                neutron.momentum = neutron.momentum.unit() * MeV; 
+                    
+                //give it the correct magnitude. for now, we aren't simulating how each collision changes
+                // the neutron's kinetic energy. 
+                neutron.momentum = neutron.momentum.unit() * P_mag; 
             }
 
+            //return the type of event this neutron ended with
             return neutron.event; 
         };
         //________________________________________________________________________
@@ -157,7 +173,7 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
         }
 
         //add this first neutron
-        GenerateNeutrons(1, start_pos, neutron_energy); 
+        GenerateNeutrons(1, start_pos); 
 
         double N=0.; 
 
@@ -181,9 +197,15 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
                 EventType::Flag end_state = TransportNeutron(neutron); 
 
                 //check if the neutron ended with a fission
-                if (end_state == EventType::kAbsorb_235) 
-                    GenerateNeutrons(neutrons_per_fission, neutron.pos, neutron.momentum.mag()); 
-                
+                if (end_state == EventType::kFission_235 || 
+                    end_state == EventType::kFission_238) 
+                {
+                    GenerateNeutrons( 
+                        Compute_n_neutrons_from_fission(neutron.GetKineticEnergy()), 
+                        neutron.pos
+                    ); 
+                }
+                    
             }
         }
 
@@ -203,8 +225,21 @@ void GadgetUtils::SimualteGenerations(  const std::vector<EventType> event_types
 
 
     //now, find the new kind of event. 
+    return pow( N_avg, 1./((double)n_generations) ); 
 }   
 //___________________________________________________________________________________________________________
+int GadgetUtils::ThrowPoisson(double rndm, double lambda)
+{
+    double n=0.; 
+    double p = exp(-lambda);
+    double cdf = p;   
+    while( cdf < rndm ) {
+        n += 1.; 
+        p *= lambda / n;
+        cdf += p;  
+    }
+    return (int)n; 
+}
 //___________________________________________________________________________________________________________
 //___________________________________________________________________________________________________________
 //___________________________________________________________________________________________________________

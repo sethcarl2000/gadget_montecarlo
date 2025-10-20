@@ -17,14 +17,18 @@ namespace GadgetUtils
     //does NOT intersect with the sphere, then it returns nan. s
     double DistanceToSphere(const Vec3& X, const Vec3& S, double R2=1.); 
 
-    void SimualteGenerations(
+    //returns the computed k-value 
+    double SimualteGenerations(
         const std::vector<EventType> event_types, 
         const int n_generations, 
         const int n_simulations,
         double sphere_rad=10., //units in cm 
         double number_density=4.82e22 //units in cm^-3. here is the value for natural, solid uranium
     );
-    
+
+    //throws a random int according to a poisson dist, given lambda = <n>., and rndm is a random dist in [0, 1).  
+    int ThrowPoisson(double rndm, double lambda); 
+
     constexpr double barns_to_cm = 1.e-24; 
 };
 

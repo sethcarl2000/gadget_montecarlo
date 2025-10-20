@@ -15,12 +15,13 @@
 class EventType {
 public: 
 
-    enum Flag : char {
-        kNone           = 0, 
-        kExit           = 1 << 0,
-        kElastic_235    = 1 << 1,
-        kElastic_238    = 1 << 2, 
-        kAbsorb_235     = 1 << 4
+    enum Flag {
+        kNone = 0, 
+        kExit,
+        kElastic_235,
+        kElastic_238, 
+        kFission_235,
+        kFission_238
     }; 
 
 private: 

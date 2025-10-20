@@ -22,6 +22,17 @@ set(include
 
 add_executable(simulate ${sources} ${include})
 
+root_generate_dictionary(G__GadgetMC ${include} LINKDEF LinkDef.h)
+
+#---------------------------------------------------------
+#   Add Libraries
+add_library(GadgetMC SHARED ${include} ${sources} G__GadgetMC.cxx)
+target_include_directories(GadgetMC PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(GadgetMC PUBLIC ROOT::Core)
+
+
 target_include_directories(simulate PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" "${ROOT_INCLUDE_DIRS}")
 
 target_link_libraries(simulate PUBLIC ROOT::Core "${ROOT_LIBRARIES}")
+
+

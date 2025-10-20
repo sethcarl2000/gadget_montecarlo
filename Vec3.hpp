@@ -12,6 +12,7 @@
 #include <cmath> 
 
 struct Vec3 { 
+    
     std::array<double,3> data;
     
     //direct access operator with no bounds checking
