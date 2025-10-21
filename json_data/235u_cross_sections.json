@@ -15,7 +15,7 @@
   "funcs": [
     {
       "ifunc":0,
-      "fName":"U-235(N,EL)U-235-L0",
+      "fName":"Elastic",
       "numCol":1,
       "typSoed":1,
       "typUsi":0,
@@ -162,7 +162,7 @@
     }
     ,{
       "ifunc":1,
-      "fName":"U-235(N,INL)U-235",
+      "fName":"Inelastic",
       "numCol":2,
       "typSoed":1,
       "typUsi":0,
@@ -374,7 +374,7 @@
     }
     ,{
       "ifunc":2,
-      "fName":"U-235(N,2N)U-234",
+      "fName":"(N,2N)",
       "numCol":4,
       "typSoed":1,
       "typUsi":0,
@@ -424,7 +424,7 @@
     }
     ,{
       "ifunc":3,
-      "fName":"U-235(N,3N)U-233",
+      "fName":"(N,3N)",
       "numCol":8,
       "typSoed":1,
       "typUsi":0,
@@ -457,7 +457,7 @@
     }
     ,{
       "ifunc":4,
-      "fName":"U-235(N,F)",
+      "fName":"Fission",
       "numCol":5,
       "typSoed":1,
       "typUsi":0,

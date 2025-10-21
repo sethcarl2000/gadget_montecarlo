@@ -15,7 +15,7 @@
 class EventType {
 public: 
 
-    enum Flag {
+    enum Flag : int {
         kNone = 0,
         kExit,
         kElastic,
@@ -34,12 +34,17 @@ private:
     //number density of the relevant type of nuclei, in 1/cm^3 
     double fNumberDensity{-1.}; 
 
+    //nuclear mass of the particle of this event. this is needed for elastic-scattering energy loss computations.
+    //units must be in MeV/c^2 
+    double fMass; 
+
 public: 
 
-    EventType(Flag event_type, std::function<double(double)> cross_section, double number_density=-1.)
+    EventType(Flag event_type, std::function<double(double)> cross_section, double number_density=-1., double mass=939.)
      :  fEventFlag{event_type}, 
         fCrossSection{cross_section}, 
-        fNumberDensity{number_density} {}; 
+        fNumberDensity{number_density}, 
+        fMass{mass} {}; 
     
     ~EventType() {}; 
     
@@ -47,6 +52,9 @@ public:
     static std::vector<EventType> Init(double enrichment_frac = 0.800, double num_density=4.82e22); 
 
     Flag GetType() const { return fEventFlag; };
+
+    //nuclear mass of the species of nucleus for this event. Units in MeV/c^2
+    double GetMass() const { return fMass; } 
 
     //get the cross section
     double CrossSection(double MeV) const { return fCrossSection(MeV); }

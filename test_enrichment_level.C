@@ -17,6 +17,7 @@
 #include "Neutron.hpp"
 #include "Vec3.hpp"
 #include "EventType.hpp" 
+#include "EnergyDependentCS.hpp"
 
 using namespace std;  
 using GadgetUtils::DistanceToSphere; 
@@ -78,6 +79,7 @@ int test_enrichment_level(const char* path_png)
         cout << "enrichment: " << enrichment << "~~~~~~~~~~~~~~~~~" << endl;
             
         vector<EventType> event_types = EventType::Init(enrichment);
+        //vector<EventType> event_types = EnergyDependentCS(enrichment); 
 
         vector<double> pts_radius, pts_mass, pts_k; 
         
@@ -126,7 +128,7 @@ int test_enrichment_level(const char* path_png)
     canv->cd(1); legend1->Draw(); 
     canv->cd(2); legend2->Draw(); 
 
-    //canv->SaveAs(path_png); 
+    canv->SaveAs(path_png); 
 
     return 0;
 }

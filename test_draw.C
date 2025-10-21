@@ -23,7 +23,6 @@ using GadgetUtils::DistanceToSphere;
 
 int test_draw() 
 {
-
     auto event_types = EventType::Init(1.00); 
     int n_generations = 2;  
 

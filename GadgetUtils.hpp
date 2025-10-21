@@ -43,8 +43,21 @@ namespace GadgetUtils
 
     void Fission(std::vector<Neutron>& buffer, Neutron n, TRandom3* rand); 
 
-    constexpr double barns_to_cm = 1.e-24; 
+    //takes a single neutron as input, and performs the neutron-transport simulations. 
+    Neutron TransportNeutron(
+        TRandom3* rand,                         //the 'TRandom3' random number generator neededs
+        Neutron n,                              //the 'input' neutron we're going to transport
+        std::vector<Neutron>& neutron_buffer,   //the 'buffer' of the next generation's neutrons
+        const std::vector<EventType>& events,   //the list of possible 'events' corresponding to this material 
+        const double rad1,                      //the outer-radius of this material 
+        const double rad0=-1.,                  //the inner-radius of this material. if rad0<0, then an 'inner raidus' is not considered. 
+        bool* is_inside_exit=nullptr            //the fcn sets this to 'true' if the neutron leaves the hollow shell on the inner surface. 
+                                                // otherwise (the neutron exits on the outer surface), this is set to 'false'.  
+                                                // this is set to 'nullptr' if the final event-type is NOT an exit. 
+    ); 
 
+    constexpr double barns_to_cm = 1.e-24; 
+    constexpr double one_dalton_in_MeV_c2 = 931.494103; 
 };
 
 

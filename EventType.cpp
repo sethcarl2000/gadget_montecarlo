@@ -17,6 +17,13 @@ vector<EventType> EventType::Init(double enrichment_frac, double num_density)
         enrichment_frac*num_density
     }); 
 
+    // 238u inelastic
+    types.push_back({
+        kInelastic, 
+        [](double MeV){ return 1.6 * GadgetUtils::barns_to_cm; }, 
+        (1. - enrichment_frac)*num_density
+    }); 
+
     // 235u fission 
     types.push_back({
         kFission, 
@@ -31,10 +38,17 @@ vector<EventType> EventType::Init(double enrichment_frac, double num_density)
         (1. - enrichment_frac)*num_density
     }); 
 
+    // 238u inelastic
+    types.push_back({
+        kInelastic, 
+        [](double MeV){ return 2.0 * GadgetUtils::barns_to_cm; }, 
+        (1. - enrichment_frac)*num_density
+    }); 
+
     // 238u fission
     types.push_back({
         kFission, 
-        [](double MeV){ return 0.6 * GadgetUtils::barns_to_cm; }, 
+        [](double MeV){ return 0.06 * GadgetUtils::barns_to_cm; }, 
         (1. - enrichment_frac)*num_density
     }); 
 

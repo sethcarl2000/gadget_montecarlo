@@ -18,7 +18,10 @@ set(include
     Neutron.hpp
     EventType.hpp
     LatticeFreePath.hpp
+    EnergyDependentCS.hpp
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 add_executable(simulate ${sources} ${include})
 
