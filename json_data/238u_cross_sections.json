@@ -465,7 +465,7 @@
     }
     ,{
       "ifunc":2,
-      "fName":"(N,2N)",
+      "fName":"N_2N",
       "numCol":4,
       "typSoed":1,
       "typUsi":0,
@@ -512,7 +512,7 @@
     }
     ,{
       "ifunc":3,
-      "fName":"(N,3N)",
+      "fName":"N_3N",
       "numCol":8,
       "typSoed":1,
       "typUsi":0,

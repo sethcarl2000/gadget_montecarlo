@@ -24,6 +24,9 @@ using GadgetUtils::DistanceToSphere;
 
 int test_enrichment_level(const char* path_png) 
 {
+    //create the Energy-dependent CS manager 
+    auto edcs_mgr = new EnergyDependentCSManager(); 
+
     struct DrawnGraphData_t {
         string legend_name; 
         double enrichment; 
@@ -38,20 +41,21 @@ int test_enrichment_level(const char* path_png)
         {"20. %",    0.200, kBlue,  kOpenTriangleDown},  
         {"50. %",    0.500, kRed,   kOpenTriangleUp}, 
         {"85. %",    0.850, kBlack, kOpenSquare}, 
+        {"100.%",    1.000, kBlue,  kFullCircle}
     };
 
     //units in cm 
     const double radius0 = 1.; 
     const double radius1 = 20.; 
-    const int npts = 10; 
+    const int npts = 20; 
 
-    const double uranium_density = 0.0191; //kg/cm^3 
+    const double uranium_density = 19.1e-3; //kg/cm^3 
     auto ball_mass = [uranium_density](double R) { return uranium_density * (TMath::Pi() * 4. / 3.)*pow( R, 3 ); }; 
 
-    const int n_generations = 2; 
+    const int n_generations = 3; 
     const int n_simulations = 1e5; 
     
-    auto canv = new TCanvas("c", "canvas", 1600, 500);
+    auto canv = new TCanvas("c", "canvas", 1500, 650);
     canv->Divide(2,1);
      
     canv->cd(1);  
@@ -78,7 +82,7 @@ int test_enrichment_level(const char* path_png)
         const double enrichment = g_data.enrichment;
         cout << "enrichment: " << enrichment << "~~~~~~~~~~~~~~~~~" << endl;
             
-        vector<EventType> event_types = EventType::Init(enrichment);
+        vector<EventType> event_types = edcs_mgr->MakeEvents(enrichment); 
         //vector<EventType> event_types = EnergyDependentCS(enrichment); 
 
         vector<double> pts_radius, pts_mass, pts_k; 

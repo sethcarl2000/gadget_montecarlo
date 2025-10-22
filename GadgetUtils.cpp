@@ -93,8 +93,6 @@ double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_t
 
         for (int g=0; g<n_generations; g++) {
 
-            //printf("<~~~  generation %4i...\n", g); 
-
             //if all the neutrons from the last generation left the sphere, then exit. 
             if (nextgen_buffer.empty()) break; 
 
@@ -107,35 +105,6 @@ double GadgetUtils::SimualteGenerations(    const std::vector<EventType> event_t
             for (auto& neutron : neutrons) {
                 neutron = GadgetUtils::TransportNeutron(&rand, neutron, nextgen_buffer, event_types, sphere_rad); 
             } 
-
-            if (draw_generations_gif) {
-                
-                //write the generation name, and continue
-                auto text = new TText(0.25, 0.10, Form("gen: %i", g)); 
-                text->Draw("SAME"); 
-
-                auto circ = new TEllipse(0.,0.,  sphere_rad,sphere_rad); 
-                circ->SetLineColor(kBlue); 
-                circ->SetLineWidth(2); 
-                circ->Draw("SAME"); 
-
-                //gDraw_canv->Modified(); 
-                //gDraw_canv->Update();
-                //gDraw_canv->SaveAs("output.gif+100"); 
-
-                //gDraw_canv->DrawFrame(-sphere_rad,-sphere_rad, sphere_rad,sphere_rad); 
-                
-                /*/delete all the lines from past generations, and continue. 
-                for (auto tobj : *(gDraw_canv->GetListOfPrimitives())) {
-                    if (tobj->IsA() == TClass::GetClass<TLine>() || 
-                        tobj->IsA() == TClass::GetClass<TEllipse>() || 
-                        tobj->IsA() == TClass::GetClass<TText>()
-                    ) delete tobj; 
-                }*/ 
-                //this_thread::sleep_for(1500ms); 
-                cout << "done with gen " << g << " neutron buffer size: " << nextgen_buffer.size() << endl; 
-            }
-
         }
         //check to see how many neutrons there are.
         N_total += (long int)nextgen_buffer.size(); 
@@ -367,6 +336,17 @@ Neutron GadgetUtils::TransportNeutron(
                 GadgetUtils::Fission(neutron_buffer, n, rand);
                 return n; //quit the transportation, we're done. 
             }
+
+            case EventType::kN_2N       : {
+                GadgetUtils::GenerateNeutrons(neutron_buffer, 2, n.pos, rand); 
+                return n; 
+            }
+
+            case EventType::kN_3N       : {
+                GadgetUtils::GenerateNeutrons(neutron_buffer, 3, n.pos, rand); 
+                return n; 
+            }
+
             case EventType::kElastic    : { 
                 n = GadgetUtils::ElasticScatter(n, min_event_mass, rand); 
                 break; 

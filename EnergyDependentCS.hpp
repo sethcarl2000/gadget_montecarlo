@@ -5,76 +5,41 @@
 
 #include "EventType.hpp" 
 #include "GadgetUtils.hpp"
+#include <map> 
+#include <string> 
+#include <memory> 
+#include <cmath> 
 
-//_______________________________________________________________________________________
-std::vector<EventType> EnergyDependentCS(double enrichment_frac, double num_density=4.82e22)
-{
-    //create all possible types of events (except leaving the sphere)
+class EnergyDependentCS {
+private:
+    double MeV_min, MeV_max;
+    double MeV_spacing_log; 
+    double MeV_span_log; 
 
-    std::vector<EventType> types; 
+    //these points are spaced GEOMETRICALLY, so the (geometric) spacing between points is = pow( MeV_max/MeV_min, 1/points.size() ). 
+    std::vector<double> points; 
+public: 
+    EnergyDependentCS(double _min, double _max, const std::vector<double>& _points); 
 
-    // 235u elastic 
-    types.push_back({
-        EventType::kElastic, 
-        [](double MeV){  return 2.; 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return 5.19295 * std::exp( -0.564431 * Elog );
-        }, 
-        enrichment_frac*num_density
-    }); 
+    //comptue the energy-dependent cross section (in barns)
+    double Compute_CS(double MeV) const; 
+}; 
 
-    // 235u fission 
-    types.push_back({
-        EventType::kFission, 
-        [](double MeV){ 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return (0.6 * Elog * Elog) + 1.; 
-        }, 
-        enrichment_frac*num_density
-    }); 
 
-    // 235u inelastic 
-    /*types.push_back({
-        EventType::kInelastic, 
-        [](double MeV){ 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return std::exp( (-0.7*Elog*Elog) + (-0.6*Elog) + 0.6 );  
-        }, 
-        enrichment_frac*num_density
-    });*/  
+class EnergyDependentCSManager {
+private: 
 
-    // 238u elastic 
-    types.push_back({
-        EventType::kElastic, 
-        [](double MeV){ return 2.; 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return 1.15 * 5.19295 * std::exp( -0.564431 * Elog );
-        }, 
-        (1. - enrichment_frac)*num_density
-    });
+    void Fill_EDCS_Uranium(); 
 
-    // 238u fission
-    types.push_back({
-        EventType::kFission, 
-        [](double MeV){ 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return std::exp( (-1.*Elog*Elog) + (-3.3*Elog) + -2.2 );  
-        }, 
-        (1. - enrichment_frac)*num_density
-    });
+public: 
+    //list of ptrs to energydependent CS objects
+    std::map<std::string, EnergyDependentCS*> fEDCS; 
 
-    // 238u inelastic 
-    types.push_back({
-        EventType::kInelastic, 
-        [](double MeV){ 
-            double Elog = std::log( MeV ) / 2.30258509; 
-            return std::exp( (-1.3*Elog*Elog) + (-0.8*Elog) + 1. );  
-        }, 
-        (1. - enrichment_frac)*num_density
-    });   
+    EnergyDependentCSManager(); 
+    ~EnergyDependentCSManager(); 
 
-    return types; 
-}
-//_______________________________________________________________________________________
+    std::vector<EventType> MakeEvents(const double enrichment_frac, const double number_density=4.82e22);   
+
+}; 
 
 #endif 

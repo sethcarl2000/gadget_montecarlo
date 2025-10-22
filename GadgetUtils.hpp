@@ -5,6 +5,7 @@
 #include <cmath> 
 #include <Vec3.hpp> 
 #include <vector> 
+#include <limits> 
 #include <TRandom3.h> 
 #include "EventType.hpp" 
 #include "Neutron.hpp"
@@ -58,6 +59,9 @@ namespace GadgetUtils
 
     constexpr double barns_to_cm = 1.e-24; 
     constexpr double one_dalton_in_MeV_c2 = 931.494103; 
+
+    constexpr double Infinity = std::numeric_limits<double>::infinity();  
+
 };
 
 

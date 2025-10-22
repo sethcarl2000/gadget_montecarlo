@@ -20,7 +20,9 @@ public:
         kExit,
         kElastic,
         kInelastic, 
-        kFission
+        kFission, 
+        kN_2N,
+        kN_3N
     }; 
 
 private: 

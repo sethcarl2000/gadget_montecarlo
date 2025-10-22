@@ -10,6 +10,7 @@ set(sources
     EventType.cpp
     GadgetUtils.cpp
     LatticeFreePath.cpp
+    EnergyDependentCS.cpp
 )
 
 set(include 
@@ -19,6 +20,7 @@ set(include
     EventType.hpp
     LatticeFreePath.hpp
     EnergyDependentCS.hpp
+    CrossSectionArrays.hpp
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
