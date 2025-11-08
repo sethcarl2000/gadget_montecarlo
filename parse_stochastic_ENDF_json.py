@@ -61,10 +61,33 @@ for func in data['funcs']:
 
     print(f'parsed dataset for "{dataset_name}", which has {len(pts_MeV)} points.')
 
-    """ ax_scat.scatter(pts_MeV, pts_CS, color='blue', alpha=0.05, marker=".")
-    ax_scat.plot(pts_MeV, pts_CS_fit, color='red', alpha=1.)
+    """ plt.figure()
+
+    plt.scatter(pts_MeV, pts_CS, color='blue', alpha=0.05, marker=".", label='data')
+    plt.plot(pts_MeV, pts_CS_fit, color='red', label='linear model')
+    plt.xlabel('Incident Neutron Energy (MeV)')
+    plt.ylabel('Fission Cross Section (b)')
+
+    plt.legend()
+
+    plt.xscale('log')
+    plt.yscale('log')
+
+    plt.show()
+
+    plt.figure()
  """
-    plt.hist(np.log10(pts_CS) - np.log10(pts_CS_fit), bins=100)
+    
+    plt.hist(np.log(pts_CS) - np.log(pts_CS_fit), bins=100) 
+    plt.xlabel('log(data) - log(model)')
+    plt.title('Dist of data about linear model')
+
+    plt.show()
+
+    stddev = np.std( np.log(pts_CS) - np.log(pts_CS_fit) )
+    mean   = np.mean( np.log(pts_CS) - np.log(pts_CS_fit) )
+
+    print(f'mean of fit {mean:.6f} stddev: {stddev:.6f}')
 
 
 
@@ -80,10 +103,3 @@ ax_scat.set_xlabel('Incident Neutron Energy (MeV)')
 ax_scat.set_ylabel('Fission Cross Section (b)')
 
 ax_hist.set_xlabel('Cross section - Model (b)') """
-
-plt.set_xlabel('')
-
-#plot_name = '{}_cross_sections.png'.format(path_out)
-#plt.savefig(plot_name)
-
-plt.show()

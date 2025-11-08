@@ -4,7 +4,7 @@ import numpy as np
 from numpy.polynomial import Polynomial
 import matplotlib.pyplot as plt
 
-path_to_json = 'json_data/235u_cross_sections.json'
+path_to_json = 'json_data/235-test.json'
 path_out = '235u'
 
 # Load your JSON file
@@ -18,14 +18,14 @@ polynomials = {}
 plt.figure()
 
 # we're going to have these points be evenly-spaced in log-space according to MeV
-MeV_min =  0.025 + 1e-6
-MeV_max = 29.000 - 1e-6
+MeV_min = 0.5
+MeV_max = 50.
 
-CS_min = 1.e-4
-CS_max = 15. 
+CS_min = 1.e-1
+CS_max = 1.e3 
 
 # this means we will have 50 pts per decade (each power of 10)
-point_log_spacing = np.log(10.)/50. 
+point_log_spacing = np.log(10.)/200. 
 
 i_color=0
 colors = ['black', 'blue', 'red', 'green', 'violet']
@@ -36,7 +36,6 @@ for func in data['funcs']:
     
     dataset_name = func['fName']
     points = func.get('pts')
-
     
     if not points: 
         continue
